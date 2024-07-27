@@ -1,0 +1,19 @@
+# Ignorar todos los archivos .env en cualquier subdirectorio
+**/.env
+.env
+
+# Ignorar carpetas
+node_modules/
+backendPackage/
+backend/mongodb-docker/data-celuflash
+package-lock.json
+
+# IDE directories
+.idea/
+.vscode/
+
+# MacOS files
+.DS_Store
+
+# Windows files
+Thumbs.db
