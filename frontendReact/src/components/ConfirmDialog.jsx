@@ -2,12 +2,14 @@ import React from 'react';
 import { Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Button } from '@mui/material';
 
 const ConfirmDialog = ({ open, onClose, onConfirm, nameItem, item }) => {
+  const valueItem = item?.nombre || item?._id;
+
   return (
     <Dialog open={open} onClose={onClose}>
       <DialogTitle>Confirmar Borrado</DialogTitle>
       <DialogContent>
         <DialogContentText>
-          ¿Estás seguro de que quieres eliminar el {nameItem} "{item?.nombre}"?
+          ¿Estás seguro de que quieres eliminar {nameItem} "{valueItem}"?
         </DialogContentText>
       </DialogContent>
       <DialogActions>

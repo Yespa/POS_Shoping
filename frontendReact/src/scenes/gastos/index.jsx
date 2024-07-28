@@ -285,7 +285,7 @@ const Gastos = () => {
       flex: 1,
       getActions: (params) => [
         <IconButton
-          color="secondary"
+          color="warning"
           aria-label="editar"
           onClick={() => handleEdit(params.id)}
         >

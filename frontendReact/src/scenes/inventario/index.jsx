@@ -297,7 +297,7 @@ const Inventario = () => {
       type: 'actions',
       getActions: (params) => [
         <IconButton
-          color="secondary"
+          color="warning"
           aria-label="editar"
           onClick={() => handleEdit(params.id)}
         >

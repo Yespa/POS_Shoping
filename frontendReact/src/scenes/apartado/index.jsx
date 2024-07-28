@@ -328,7 +328,7 @@ const Apartados = () => {
           <PlagiarismIcon />
         </IconButton>,
         <IconButton
-        color="secondary"
+        color="info"
           aria-label="imprimir"
           onClick={() => handlePrint(params.row)}
         >

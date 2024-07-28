@@ -1,17 +1,21 @@
 import React, { useState, useEffect, useCallback, useContext } from 'react';
-import { Box, useTheme, IconButton, Alert, Snackbar, Stack, Typography, TextField, ToggleButton, ToggleButtonGroup} from "@mui/material";
+import { Box, useTheme, IconButton, Alert, Snackbar, Stack, Typography, TextField, ToggleButton, ToggleButtonGroup, Modal, Fade, Backdrop } from "@mui/material";
 import { DataGrid, GridToolbar } from "@mui/x-data-grid";
 import { tokens } from "../../theme";
 import Header from "../../components/Header";
 import DetailsFacture from '../../components/detailsFacture';
 import PrintFactura from '../../components/printFactura';
 import { AuthContext } from '../../components/AuthContext';
+import PedidoModal from '../../components/PedidoModal';
+import ConfirmDialog from "../../components/ConfirmDialog";
 
 import EditIcon from '@mui/icons-material/Edit';
 import PlagiarismIcon from '@mui/icons-material/Plagiarism';
 import PrintIcon from '@mui/icons-material/Print';
 import SearchIcon from '@mui/icons-material/Search';
 import RefreshIcon from '@mui/icons-material/Refresh';
+import DeleteIcon from '@mui/icons-material/Delete';
+
 
 const Facturas = () => {
   const { role: userRole } = useContext(AuthContext);
@@ -25,7 +29,10 @@ const Facturas = () => {
   const [busquedaTipo, setBusquedaTipo] = useState('id');
   const [fechaInicio, setFechaInicio] = useState('');
   const [fechaFin, setFechaFin] = useState('');
-  const [dialogOpen, setDialogOpen] = useState(false);
+  const [dialogOpenInfo, setDialogOpenInfo] = useState(false);
+  const [dialogOpenConfirm, setDialogOpenConfirm] = useState(false);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [facturaAEliminar, setFacturaAEliminar] = useState(null);
   const [error, setError] = useState(null);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState("");
@@ -34,7 +41,18 @@ const Facturas = () => {
 
   const handleOpenDialog = (factura) => {
     setFacturaSeleccionada(factura);
-    setDialogOpen(true);
+    setDialogOpenInfo(true);
+  };
+
+  const handleOpenModal = (factura) => {
+    console.log(factura)
+    setFacturaSeleccionada(factura);
+    setModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setModalOpen(false);
+    handleRefresh()
   };
 
   const handlePrint = (factura) => {
@@ -44,7 +62,8 @@ const Facturas = () => {
   };
 
   const handleCloseDialog = () => {
-    setDialogOpen(false);
+    setDialogOpenInfo(false);
+    setDialogOpenConfirm(false);
   };
 
   const openSnackbar = (message, severity) => {
@@ -122,9 +141,39 @@ const Facturas = () => {
     obtenerFacturas();
   };
 
-  const handleEdit = (id) => {
-    console.log(id)
+  const handleDeleteClick = (id) => {
+    const facturaAEliminar = facturas.find(factura => factura._id === id);
+    console.log(facturaAEliminar)
+    if (!facturaAEliminar) {
+      console.error("Factura no encontrada");
+      return;
+    }
+    setFacturaAEliminar(facturaAEliminar);
+    setDialogOpenConfirm(true);
   };
+
+  const handleConfirmDelete = async (id) => {
+    setDialogOpenConfirm(false);    
+    // Realiza la petición de borrado al backend
+    console.log(id)
+    try {
+      const response = await fetch(`${API_URL}/facturas/${id}`, {
+        method: 'DELETE'
+      });
+  
+      if (!response.ok) {
+        throw new Error('Error al eliminar la factura');
+      }
+  
+      console.log('Factura eliminada');
+      obtenerFacturas(); // Actualiza la lista de facturas
+      openSnackbar("Se ha eliminado la factura existosamente.", "success");
+    } catch (error) {
+      console.error('Error:', error);
+      openSnackbar("Falló la eliminación de la factura", "error");
+    }
+  };
+
 
   const imprimirFactura = (datosFactura) => {
     setTimeout(() => {
@@ -245,9 +294,9 @@ const Facturas = () => {
       getActions: (params) => [
         ["admin", "master"].includes(userRole) && (
           <IconButton
-            color="secondary"
+            color="warning"
             aria-label="editar"
-            onClick={() => handleEdit(params.id)}
+            onClick={() => handleOpenModal(params.row)}
           >
             <EditIcon />
           </IconButton>
@@ -260,12 +309,21 @@ const Facturas = () => {
           <PlagiarismIcon />
         </IconButton>,
         <IconButton
-          color="secondary"
+          color="info"
           aria-label="imprimir"
           onClick={() => handlePrint(params.row)}
         >
           <PrintIcon/>
-        </IconButton>
+        </IconButton>,
+        ["admin", "master"].includes(userRole) && (
+          <IconButton
+            color="error"
+            aria-label="borrar"
+            onClick={() => handleDeleteClick(params.id)}
+          >
+            <DeleteIcon />
+          </IconButton>
+        ),
       ].filter(Boolean),
     }
   ];
@@ -436,9 +494,48 @@ const Facturas = () => {
         />
         <DetailsFacture
           facturaInfo={facturaSeleccionada}
-          open={dialogOpen}
+          open={dialogOpenInfo}
           handleClose={handleCloseDialog}
         />
+
+        <Modal
+          aria-labelledby="transition-modal-title"
+          aria-describedby="transition-modal-description"
+          open={modalOpen}
+          onClose={() => setModalOpen(false)}
+          closeAfterTransition
+          BackdropComponent={Backdrop}
+          BackdropProps={{
+            timeout: 500,
+          }}
+        >
+          <Fade in={modalOpen}>
+            <Box sx={{
+              position: 'absolute',
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%)',
+              width: '80%',
+              bgcolor: 'background.paper',
+              boxShadow: 24,
+              p: 4,
+            }}>
+              <PedidoModal 
+                facturaOrig={facturaSeleccionada}
+                handleCloseModal={handleCloseModal} 
+              />
+            </Box>
+          </Fade>
+        </Modal>
+
+        <ConfirmDialog
+          open={dialogOpenConfirm}
+          onClose={handleCloseDialog}
+          onConfirm={handleConfirmDelete}
+          nameItem={"factura"}
+          item={facturaAEliminar}
+        />
+
         <Snackbar open={snackbarOpen} autoHideDuration={6000} onClose={closeSnackbar}>
           <Alert onClose={closeSnackbar} severity={snackbarSeverity} sx={{ width: '100%' }}>
             {snackbarMessage}
