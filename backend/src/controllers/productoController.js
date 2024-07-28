@@ -134,8 +134,93 @@ exports.procesaVenta = async (req, res) => {
   }
 };
 
+exports.procesaEdicionFactura = async (req, res) => {
+  try {
+    
+    const { productosActuales, productosEditados } = req.body;
+
+    // Crear un diccionario para acceso rápido a los productos actuales por ID
+    const productosActualesDict = {};
+    productosActuales.forEach(producto => {
+      productosActualesDict[producto._id] = producto;
+    });
+
+    // Crear un diccionario para acceso rápido a los productos editados por ID
+    const productosEditadosDict = {};
+    productosEditados.forEach(producto => {
+      productosEditadosDict[producto._id] = producto;
+    });
+
+    // Procesar productos editados
+    for (const productoEditado of productosEditados) {
+      const productoActual = productosActualesDict[productoEditado._id];
+
+      if (productoActual) {
+        // Producto existente, actualizar cantidad
+        const diferenciaCantidad = productoEditado.cantidad - productoActual.cantidad;
+
+        const productoInventario = await Producto.findById(productoEditado._id);
+        if (!productoInventario) {
+          return res.status(404).json({ mensaje: 'Producto no encontrado en el inventario' });
+        }
+
+        const nuevaCantidad = productoInventario.cantidad - diferenciaCantidad;
+
+        if (nuevaCantidad < 0) {
+          return res.status(400).json({ mensaje: `Cantidad en inventario insuficiente - ${productoInventario.nombre}` });
+        }
+
+        const productoActualizado = await Producto.findByIdAndUpdate(productoEditado._id, { cantidad: nuevaCantidad }, { new: true });
+        if (!productoActualizado) {
+          return res.status(404).json({ mensaje: 'Producto no encontrado al intentar actualizar' });
+        }
+      } else {
+        // Producto nuevo, descontar del inventario
+        const productoInventario = await Producto.findById(productoEditado._id);
+        if (!productoInventario) {
+          return res.status(404).json({ mensaje: 'Producto no encontrado en el inventario' });
+        }
+
+        const nuevaCantidad = productoInventario.cantidad - productoEditado.cantidad;
+
+        if (nuevaCantidad < 0) {
+          return res.status(400).json({ mensaje: `Cantidad en inventario insuficiente - ${productoInventario.nombre}` });
+        }
+
+        const productoActualizado = await Producto.findByIdAndUpdate(productoEditado._id, { cantidad: nuevaCantidad }, { new: true });
+        if (!productoActualizado) {
+          return res.status(404).json({ mensaje: 'Producto no encontrado al intentar actualizar' });
+        }
+      }
+    }
+
+    // Procesar productos eliminados
+    for (const productoActual of productosActuales) {
+      if (!productosEditadosDict[productoActual._id]) {
+        // Producto eliminado, reingresar al inventario
+        const productoInventario = await Producto.findById(productoActual._id);
+        if (!productoInventario) {
+          return res.status(404).json({ mensaje: 'Producto no encontrado en el inventario' });
+        }
+
+        const nuevaCantidad = productoInventario.cantidad + productoActual.cantidad;
+
+        const productoActualizado = await Producto.findByIdAndUpdate(productoActual._id, { cantidad: nuevaCantidad }, { new: true });
+        if (!productoActualizado) {
+          return res.status(404).json({ mensaje: 'Producto no encontrado al intentar actualizar' });
+        }
+      }
+    }
+
+    res.json({ mensaje: 'Inventario actualizado correctamente' });
+  } catch (error) {
+    res.status(500).json({ mensaje: error.message });
+  }
+};
+
+
  // Función para obtener la suma de precio_inventario y la suma por tipo_producto
- exports.obtenerSumaPrecioInventarioPorTipo = async (req, res) => {
+exports.obtenerSumaPrecioInventarioPorTipo = async (req, res) => {
   try {
       // Primero, calculamos la suma total de precio_inventario
       const sumaTotal = await Producto.aggregate([

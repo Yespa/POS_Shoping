@@ -5,6 +5,7 @@ const productoController = require('../controllers/productoController');
 
 router.post('/productos', productoController.agregarProducto);
 router.post('/productos/procesarVenta', productoController.procesaVenta);
+router.post('/productos/procesarEdicion', productoController.procesaEdicionFactura);
 router.get('/productos/all', productoController.obtenerProductosLimitados);
 router.get('/productos/buscar', productoController.buscarProductosLimitados);
 router.get('/productos/totales', productoController.obtenerSumaPrecioInventarioPorTipo);

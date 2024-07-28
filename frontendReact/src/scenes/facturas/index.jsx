@@ -153,7 +153,28 @@ const Facturas = () => {
   };
 
   const handleConfirmDelete = async (id) => {
-    setDialogOpenConfirm(false);    
+    setDialogOpenConfirm(false);
+
+    const productos = {
+      productosActuales: facturaAEliminar.productosVendidos,
+      productosEditados: []
+    }
+
+    // Se realiza petición de ingreso a inventario
+    const responseUpdate = await fetch(`${API_URL}/productos/procesarEdicion`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(productos)
+    });
+
+    const updateMsg = await responseUpdate.json();
+
+    if (!responseUpdate.ok) {
+      throw new Error(`Unidades insuficientes en inventario | ${updateMsg.mensaje}`);
+    }
+
     // Realiza la petición de borrado al backend
     console.log(id)
     try {

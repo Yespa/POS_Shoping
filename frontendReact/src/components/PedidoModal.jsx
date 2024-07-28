@@ -209,8 +209,24 @@ const PedidoModal = ({ facturaOrig, handleCloseModal }) => {
   const editarFactura = async (editedFactura) => {
     try {
 
-      console.log("EDITED FACTURE")
-      console.log(editedFactura)
+      const productos = {
+        productosActuales: productosVendidosInicial,
+        productosEditados: editedFactura.productosVendidos
+      }
+
+      const responseUpdate = await fetch(`${API_URL}/productos/procesarEdicion`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(productos)
+      });
+
+      const updateMsg = await responseUpdate.json();
+
+      if (!responseUpdate.ok) {
+        throw new Error(`Unidades insuficientes en inventario | ${updateMsg.mensaje}`);
+      }
 
       const response = await fetch(`${API_URL}/facturas/${editedFactura._id}`, {
         method: 'PUT',
@@ -225,9 +241,6 @@ const PedidoModal = ({ facturaOrig, handleCloseModal }) => {
       }
       const facturaEditada = await response.json();
 
-      console.log("DESPUES DE EDITAR TENGO QUE")
-      console.log(facturaEditada)
-      
       setFacturaParaImprimir(facturaEditada);
       imprimirFactura(facturaEditada);
 
