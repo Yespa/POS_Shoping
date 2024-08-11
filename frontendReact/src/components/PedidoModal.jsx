@@ -16,9 +16,9 @@ const PedidoModal = ({ facturaOrig, handleCloseModal }) => {
   const theme = useTheme();
   const colors = tokens(theme.palette.mode);
 
-  const clienteInicial = facturaOrig.cliente
-  const productosVendidosInicial = facturaOrig.productosVendidos
-  const totalFacturaInicial = facturaOrig.totalFactura
+  const clienteInicial = facturaOrig.cliente;
+  const productosVendidosInicial = facturaOrig.productosVendidos;
+  const totalFacturaInicial = facturaOrig.totalFactura;
 
   const [cliente, setCliente] = useState(clienteInicial);
   const [opciones, setOpciones] = useState([]);
@@ -29,7 +29,7 @@ const PedidoModal = ({ facturaOrig, handleCloseModal }) => {
   const [totalFactura, setTotalFactura] = useState(totalFacturaInicial);
   const [openDialogPago, setOpenDialogPago] = useState(false);
   const [ventaResumen, setVentaResumen] = useState(null);
-  const [facturaParaImprimir, setFacturaParaImprimir] = useState(null);
+  const [editedfacturaParaImprimir, setEditedfacturaParaImprimir] = useState(null);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState("");
   const [snackbarSeverity, setSnackbarSeverity] = useState("error");
@@ -42,7 +42,7 @@ const PedidoModal = ({ facturaOrig, handleCloseModal }) => {
   const validarInfoCliente = () => {
     let esValido = true;
     let erroresTemp = { nombre: '', docIdentidad: '', telefono: '' };
-  
+
     if (!cliente.nombre.trim()) {
       erroresTemp.nombre = 'El nombre no puede estar vacío.';
       esValido = false;
@@ -55,17 +55,17 @@ const PedidoModal = ({ facturaOrig, handleCloseModal }) => {
       erroresTemp.telefono = 'El teléfono no puede estar vacío.';
       esValido = false;
     }
-  
+
     setErrores(erroresTemp);
     return esValido;
   };
 
   const handleSelectProducto = (event, newValue) => {
     const opcionSeleccionada = opciones.find(opcion => opcion.nombre === newValue || opcion === newValue);
-  
+
     if (opcionSeleccionada) {
       const productoExistenteIndex = productosVendidos.findIndex(p => p._id === opcionSeleccionada._id);
-  
+
       if (productoExistenteIndex !== -1) {
         const nuevosProductos = [...productosVendidos];
         nuevosProductos[productoExistenteIndex].cantidad += 1;
@@ -214,18 +214,40 @@ const PedidoModal = ({ facturaOrig, handleCloseModal }) => {
         productosEditados: editedFactura.productosVendidos
       }
 
-      const responseUpdate = await fetch(`${API_URL}/productos/procesarEdicion`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(productos)
-      });
+      // Función para comparar si los productos actuales y editados son iguales
+      const productosIguales = (productosActuales, productosEditados) => {
+        if (productosActuales.length !== productosEditados.length) return false;
 
-      const updateMsg = await responseUpdate.json();
+        for (let i = 0; i < productosActuales.length; i++) {
+          const actual = productosActuales[i];
+          const editado = productosEditados[i];
 
-      if (!responseUpdate.ok) {
-        throw new Error(`Unidades insuficientes en inventario | ${updateMsg.mensaje}`);
+          if (actual._id !== editado._id ||
+            actual.nombre !== editado.nombre ||
+            actual.descripcion !== editado.descripcion ||
+            actual.tipo_producto !== editado.tipo_producto ||
+            actual.cantidad !== editado.cantidad) {
+            return false;
+          }
+        }
+        return true;
+      };
+
+      // Solo realizar el fetch si los productos no son iguales
+      if (!productosIguales(productos.productosActuales, productos.productosEditados)) {
+        const responseUpdate = await fetch(`${API_URL}/productos/procesarEdicion`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(productos)
+        });
+
+        const updateMsg = await responseUpdate.json();
+
+        if (!responseUpdate.ok) {
+          throw new Error(`Unidades insuficientes en inventario | ${updateMsg.mensaje}`);
+        }
       }
 
       const response = await fetch(`${API_URL}/facturas/${editedFactura._id}`, {
@@ -241,20 +263,25 @@ const PedidoModal = ({ facturaOrig, handleCloseModal }) => {
       }
       const facturaEditada = await response.json();
 
-      setFacturaParaImprimir(facturaEditada);
-      imprimirFactura(facturaEditada);
+      setEditedfacturaParaImprimir(facturaEditada);
+
+      // Espera a que el componente de impresión se haya renderizado antes de abrir la ventana de impresión
+      setTimeout(() => {
+        imprimirFactura();
+      }, 100);
 
       openSnackbar("Se actualizó la factura exitosamente", "success");
-      handleCancelarCompra()
+      handleCancelarCompra();
 
     } catch (error) {
       console.error('Error:', error);
       openSnackbar(`Falló la actualización de la factura ${error.message}`, "error");
     }
   };
-  
-  const imprimirFactura = (datosFactura) => {
-    setTimeout(() => {
+
+  const imprimirFactura = () => {
+    const elementoFactura = document.getElementById('editedfacturaParaImprimir');
+    if (elementoFactura) {
       const ventanaImpresion = window.open('', '_blank', 'width=50mm');
       ventanaImpresion.document.write(`
         <html>
@@ -274,13 +301,13 @@ const PedidoModal = ({ facturaOrig, handleCloseModal }) => {
           </style>
         </head>
         <body>
-          ${document.getElementById('facturaParaImprimir').innerHTML}
+          ${elementoFactura.innerHTML}
         </body>
         </html>
       `);
       ventanaImpresion.document.close();
       ventanaImpresion.focus();
-    }, 500);
+    }
   };
 
   const columns = [
@@ -339,7 +366,7 @@ const PedidoModal = ({ facturaOrig, handleCloseModal }) => {
     setSnackbarSeverity(severity);
     setSnackbarOpen(true);
   };
-  
+
   useEffect(() => {
     const total = productosVendidos.reduce((sum, producto) => sum + producto.precio_total, 0);
     setTotalFactura(total);
@@ -559,8 +586,8 @@ const PedidoModal = ({ facturaOrig, handleCloseModal }) => {
             </Alert>
           </Snackbar>
         </Stack>
-        <div id="facturaParaImprimir" style={{ display: "none" }}>
-          {facturaParaImprimir && <PrintFactura datosFactura={facturaParaImprimir} />}
+        <div id="editedfacturaParaImprimir" style={{ display: "none" }}>
+          {editedfacturaParaImprimir && <PrintFactura datosFactura={editedfacturaParaImprimir} />}
         </div>
       </Box>
     </Box>

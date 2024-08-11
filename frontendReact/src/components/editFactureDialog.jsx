@@ -27,7 +27,7 @@ import {
 import { styled } from '@mui/material/styles';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 
-const EditFactureDialog = ({ apartadoInfo, open, onSave, onClose }) => {
+const EditFactureDialog = ({ editFactureInfo, open, onSave, onClose }) => {
   const API_URL = process.env.REACT_APP_API_URL
   const [metodoPago, setMetodoPago] = useState('efectivo');
   const [bancoSeleccionado, setBancoSeleccionado] = useState('');
@@ -38,7 +38,7 @@ const EditFactureDialog = ({ apartadoInfo, open, onSave, onClose }) => {
   const [pendientePago, setPendientePago] = useState('');
   const [erroresPago, setErroresPago] = useState({});
 
-  if (!apartadoInfo) return null;
+  if (!editFactureInfo) return null;
 
   const handleMetodoPagoChange = (event) => {
     setMetodoPago(event.target.value);
@@ -47,7 +47,7 @@ const EditFactureDialog = ({ apartadoInfo, open, onSave, onClose }) => {
     setAbonoEfectivoFormateado('');
     setAbonoTransferenciaFormateado('');
     setAbonoEfectivo('');
-    setPendientePago(apartadoInfo.saldoPendiente);
+    setPendientePago(editFactureInfo.saldoPendiente);
     setErroresPago({});
   };
 
@@ -84,7 +84,7 @@ const EditFactureDialog = ({ apartadoInfo, open, onSave, onClose }) => {
   
   const actualizarPendientePago = (nuevoAbonoEfectivo, nuevoAbonoTransferencia) => {
     const nuevoTotalAbonado = nuevoAbonoEfectivo + nuevoAbonoTransferencia;
-    const nuevoSaldoPendiente = apartadoInfo.saldoPendiente - nuevoTotalAbonado;
+    const nuevoSaldoPendiente = editFactureInfo.saldoPendiente - nuevoTotalAbonado;
     setPendientePago(nuevoSaldoPendiente);
   };
 
@@ -121,7 +121,7 @@ const EditFactureDialog = ({ apartadoInfo, open, onSave, onClose }) => {
       if (abonoEfectivo === 0 || abonoEfectivo === '') {
         nuevosErrores.abonoEfectivo = 'El valor debe ser mayor a 0';
       }
-      if (abonoEfectivo > apartadoInfo.saldoPendiente) {
+      if (abonoEfectivo > editFactureInfo.saldoPendiente) {
         nuevosErrores.abonoEfectivo = 'Se está abonando más de lo necesario';
       }
     } 
@@ -133,7 +133,7 @@ const EditFactureDialog = ({ apartadoInfo, open, onSave, onClose }) => {
       if (abonoTransferencia === 0 || abonoTransferencia === '') {
         nuevosErrores.abonoTransferencia = 'El valor debe ser mayor a 0';
       }
-      if (abonoTransferencia > apartadoInfo.saldoPendiente) {
+      if (abonoTransferencia > editFactureInfo.saldoPendiente) {
         nuevosErrores.abonoTransferencia = 'Se está abonando más de lo necesario';
       }
     } 
@@ -148,7 +148,7 @@ const EditFactureDialog = ({ apartadoInfo, open, onSave, onClose }) => {
       if (abonoTransferencia === 0 || abonoTransferencia === '') {
         nuevosErrores.abonoTransferencia = 'El valor debe ser mayor a 0';
       }
-      if (abonoEfectivo > apartadoInfo.saldoPendiente || abonoTransferencia > apartadoInfo.saldoPendiente || (abonoTransferencia + abonoEfectivo) > apartadoInfo.saldoPendiente) {
+      if (abonoEfectivo > editFactureInfo.saldoPendiente || abonoTransferencia > editFactureInfo.saldoPendiente || (abonoTransferencia + abonoEfectivo) > editFactureInfo.saldoPendiente) {
         nuevosErrores.abonoEfectivo = 'Se está abonando más de lo necesario';
       }
     }
@@ -158,42 +158,42 @@ const EditFactureDialog = ({ apartadoInfo, open, onSave, onClose }) => {
       return;
     } else {
 
-      let nuevoApartadoInfo = {}
+      let nuevoeditFactureInfo = {}
 
       if (metodoPago === "efectivo"){
-        nuevoApartadoInfo = {
-          ...apartadoInfo,
-          pagoTransferencia: 0 + apartadoInfo.pagoTransferencia,
-          pagoEfectivo: abonoEfectivo + apartadoInfo.pagoEfectivo,
+        nuevoeditFactureInfo = {
+          ...editFactureInfo,
+          pagoTransferencia: 0 + editFactureInfo.pagoTransferencia,
+          pagoEfectivo: abonoEfectivo + editFactureInfo.pagoEfectivo,
           banco: 'NoAplica'
         };
       } else if (metodoPago === "transferencia") {
-        nuevoApartadoInfo = {
-          ...apartadoInfo,
-          pagoTransferencia: abonoTransferencia + apartadoInfo.pagoTransferencia,
-          pagoEfectivo: 0 + apartadoInfo.pagoEfectivo,
+        nuevoeditFactureInfo = {
+          ...editFactureInfo,
+          pagoTransferencia: abonoTransferencia + editFactureInfo.pagoTransferencia,
+          pagoEfectivo: 0 + editFactureInfo.pagoEfectivo,
           banco: bancoSeleccionado
         };
       } else if (metodoPago === "mixto") {
-        nuevoApartadoInfo = {
-          ...apartadoInfo,
-          pagoTransferencia: abonoTransferencia + apartadoInfo.pagoTransferencia,
-          pagoEfectivo: abonoEfectivo + apartadoInfo.pagoEfectivo,
+        nuevoeditFactureInfo = {
+          ...editFactureInfo,
+          pagoTransferencia: abonoTransferencia + editFactureInfo.pagoTransferencia,
+          pagoEfectivo: abonoEfectivo + editFactureInfo.pagoEfectivo,
           banco: bancoSeleccionado
         };
       }
 
-      nuevoApartadoInfo.totalAbonado = nuevoApartadoInfo.pagoTransferencia + nuevoApartadoInfo.pagoEfectivo;
-      nuevoApartadoInfo.saldoPendiente = nuevoApartadoInfo.totalFactura - nuevoApartadoInfo.totalAbonado;
+      nuevoeditFactureInfo.totalAbonado = nuevoeditFactureInfo.pagoTransferencia + nuevoeditFactureInfo.pagoEfectivo;
+      nuevoeditFactureInfo.saldoPendiente = nuevoeditFactureInfo.totalFactura - nuevoeditFactureInfo.totalAbonado;
 
-      if (apartadoInfo.metodoPago === "efectivo" || apartadoInfo.metodoPago === "transferencia") {
-        if (apartadoInfo.metodoPago !== metodoPago) {
-          nuevoApartadoInfo.metodoPago = "mixto"
+      if (editFactureInfo.metodoPago === "efectivo" || editFactureInfo.metodoPago === "transferencia") {
+        if (editFactureInfo.metodoPago !== metodoPago) {
+          nuevoeditFactureInfo.metodoPago = "mixto"
         }
       }
 
-      nuevoApartadoInfo.historialAbonos = [
-        ...nuevoApartadoInfo.historialAbonos,
+      nuevoeditFactureInfo.historialAbonos = [
+        ...nuevoeditFactureInfo.historialAbonos,
         {
           fechaAbono: new Date().toISOString(),
           abono: (abonoEfectivo || 0) + (abonoTransferencia || 0),
@@ -201,25 +201,25 @@ const EditFactureDialog = ({ apartadoInfo, open, onSave, onClose }) => {
       ];
 
       let infoFactura = {
-        cliente: nuevoApartadoInfo.cliente,
-        productosVendidos: nuevoApartadoInfo.productosVendidos,
-        pagoEfectivo: nuevoApartadoInfo.pagoEfectivo,
-        pagoTransferencia: nuevoApartadoInfo.pagoTransferencia,
-        banco: nuevoApartadoInfo.banco,
-        metodoPago: nuevoApartadoInfo.metodoPago,
-        totalFactura: nuevoApartadoInfo.totalFactura,
+        cliente: nuevoeditFactureInfo.cliente,
+        productosVendidos: nuevoeditFactureInfo.productosVendidos,
+        pagoEfectivo: nuevoeditFactureInfo.pagoEfectivo,
+        pagoTransferencia: nuevoeditFactureInfo.pagoTransferencia,
+        banco: nuevoeditFactureInfo.banco,
+        metodoPago: nuevoeditFactureInfo.metodoPago,
+        totalFactura: nuevoeditFactureInfo.totalFactura,
         fechaVenta: new Date().toISOString(),
-        vendedor: nuevoApartadoInfo.vendedor
+        vendedor: nuevoeditFactureInfo.vendedor
       }
 
-      if (nuevoApartadoInfo.saldoPendiente === 0){
+      if (nuevoeditFactureInfo.saldoPendiente === 0){
         console.log("registro apartado como venta")
-        nuevoApartadoInfo.estado = "PAGADO"
+        nuevoeditFactureInfo.estado = "PAGADO"
         procesarPago(infoFactura)
       }
 
 
-      onSave(nuevoApartadoInfo)
+      onSave(nuevoeditFactureInfo)
       resetForm();
       onClose()
     }
@@ -244,7 +244,7 @@ const EditFactureDialog = ({ apartadoInfo, open, onSave, onClose }) => {
       <DialogContent>
         <Box mb={2} display="flex" justifyContent="space-between">
             <Typography variant="body1">
-                Fecha: {new Date(apartadoInfo.fechaApartado).toLocaleString('es-CO', {
+                Fecha: {new Date(editFactureInfo.fechaApartado).toLocaleString('es-CO', {
                     year: 'numeric',
                     month: 'long',
                     day: 'numeric',
@@ -254,19 +254,19 @@ const EditFactureDialog = ({ apartadoInfo, open, onSave, onClose }) => {
                     hour12: true
                 })}
             </Typography>
-          <Typography variant="body1">ID Apartado: {apartadoInfo._id}</Typography>
+          <Typography variant="body1">ID Apartado: {editFactureInfo._id}</Typography>
         </Box>
 
         <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 2 }}>Datos del Cliente</Typography>
         <Grid container spacing={2}>
           <Grid item xs={4}>
-            <Typography variant="body1"><span style={{ fontWeight: 'bold' }}>Nombre:</span> {apartadoInfo.cliente.nombre}</Typography>
+            <Typography variant="body1"><span style={{ fontWeight: 'bold' }}>Nombre:</span> {editFactureInfo.cliente.nombre}</Typography>
           </Grid>
           <Grid item xs={4}>
-            <Typography variant="body1"><span style={{ fontWeight: 'bold' }}>Documento:</span> {apartadoInfo.cliente.docIdentidad}</Typography>
+            <Typography variant="body1"><span style={{ fontWeight: 'bold' }}>Documento:</span> {editFactureInfo.cliente.docIdentidad}</Typography>
           </Grid>
           <Grid item xs={4}>
-            <Typography variant="body1"><span style={{ fontWeight: 'bold' }}>Telefono:</span> {apartadoInfo.cliente.telefono}</Typography>
+            <Typography variant="body1"><span style={{ fontWeight: 'bold' }}>Telefono:</span> {editFactureInfo.cliente.telefono}</Typography>
           </Grid>
         </Grid>
 
@@ -288,7 +288,7 @@ const EditFactureDialog = ({ apartadoInfo, open, onSave, onClose }) => {
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {apartadoInfo.productosVendidos.map((producto) => (
+                    {editFactureInfo.productosVendidos.map((producto) => (
                       <TableRow key={producto._id}>
                         <TableCell>{producto.nombre}</TableCell>
                         <TableCell align="right">{producto.cantidad}</TableCell>
@@ -311,7 +311,7 @@ const EditFactureDialog = ({ apartadoInfo, open, onSave, onClose }) => {
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {apartadoInfo.historialAbonos.map((abono) => (
+                    {editFactureInfo.historialAbonos.map((abono) => (
                       <TableRow key={abono._id}>
                         <TableCell>{new Date(abono.fechaAbono).toLocaleString('es-CO', {
                             year: 'numeric',
@@ -333,12 +333,12 @@ const EditFactureDialog = ({ apartadoInfo, open, onSave, onClose }) => {
               <Typography variant="h6" sx={{ fontWeight: 'bold', mt: 2, mb: 2 }}>Info total Abono</Typography>
               <Grid container spacing={2}>
                 <Grid item xs={6}>
-                  <Typography variant="body1"><span style={{ fontWeight: 'bold' }}>Pago Transferencia:</span> {formatCurrency(apartadoInfo.pagoTransferencia)}</Typography>
-                  <Typography variant="body1"><span style={{ fontWeight: 'bold' }}>Banco:</span> {apartadoInfo.banco}</Typography>
+                  <Typography variant="body1"><span style={{ fontWeight: 'bold' }}>Pago Transferencia:</span> {formatCurrency(editFactureInfo.pagoTransferencia)}</Typography>
+                  <Typography variant="body1"><span style={{ fontWeight: 'bold' }}>Banco:</span> {editFactureInfo.banco}</Typography>
                 </Grid>
                 <Grid item xs={6}>
-                  <Typography variant="body1"><span style={{ fontWeight: 'bold' }}>Método de Pago:</span> {apartadoInfo.metodoPago}</Typography>
-                  <Typography variant="body1"><span style={{ fontWeight: 'bold' }}>Pago Efectivo:</span> {formatCurrency(apartadoInfo.pagoEfectivo)}</Typography>
+                  <Typography variant="body1"><span style={{ fontWeight: 'bold' }}>Método de Pago:</span> {editFactureInfo.metodoPago}</Typography>
+                  <Typography variant="body1"><span style={{ fontWeight: 'bold' }}>Pago Efectivo:</span> {formatCurrency(editFactureInfo.pagoEfectivo)}</Typography>
                 </Grid>
               </Grid>
 
@@ -362,7 +362,7 @@ const EditFactureDialog = ({ apartadoInfo, open, onSave, onClose }) => {
                 Saldo Pendiente:
               </Typography>
               <Typography sx={{ fontSize: '1rem', alignSelf: 'center' }}>
-                {formatCurrency(apartadoInfo.saldoPendiente)}
+                {formatCurrency(editFactureInfo.saldoPendiente)}
               </Typography>
             </Box>
           </Grid>
@@ -380,7 +380,7 @@ const EditFactureDialog = ({ apartadoInfo, open, onSave, onClose }) => {
                 Total Abonado:
               </Typography>
               <Typography sx={{ fontSize: '1rem', alignSelf: 'center' }}>
-                {formatCurrency(apartadoInfo.totalAbonado)}
+                {formatCurrency(editFactureInfo.totalAbonado)}
               </Typography>
             </Box>
           </Grid>
@@ -397,13 +397,13 @@ const EditFactureDialog = ({ apartadoInfo, open, onSave, onClose }) => {
         }}>
           <Box sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
             <Typography variant="h5" component="div" sx={{ fontWeight: 'bold' }}>
-              Total Factura: {formatCurrency(apartadoInfo.totalFactura)}
+              Total Factura: {formatCurrency(editFactureInfo.totalFactura)}
             </Typography>
           </Box>
           
           <Box sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
             <Typography variant="h6" sx={{ opacity: 0.8 }}>
-              Vendedor: {apartadoInfo.vendedor}
+              Vendedor: {editFactureInfo.vendedor}
             </Typography>
           </Box>
         </Box>

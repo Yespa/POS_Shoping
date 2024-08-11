@@ -29,11 +29,20 @@ import { styled } from '@mui/material/styles';
 import { AuthContext } from './AuthContext';
 
 const PaymentDialogEdit = ({ open, onClose, totalFactura, editarFactura, ventaResumen, infoFacturaOrig }) => {
+
+  const formateador = (numero) => {
+    const formateador = new Intl.NumberFormat('es-ES');
+    const valorConFormato = formateador.format(numero);
+    return valorConFormato
+  };
   
   const metodoPagoInicial = infoFacturaOrig.metodoPago
   const pagoTransferenciaInicial = infoFacturaOrig.pagoTransferencia
   const pagoEfectivoInicial = infoFacturaOrig.pagoEfectivo
   const bancoSelInicial = infoFacturaOrig.banco === "NoAplica" || !infoFacturaOrig.banco ? '' : infoFacturaOrig.banco;
+
+  const efectivoFormateadoInicial = formateador(pagoEfectivoInicial)
+  const transferenciaFormateadoInicial = formateador(pagoTransferenciaInicial)
   
   const { name: userName } = useContext(AuthContext);
   const [metodoPago, setMetodoPago] = useState(metodoPagoInicial);
@@ -41,8 +50,8 @@ const PaymentDialogEdit = ({ open, onClose, totalFactura, editarFactura, ventaRe
   const [efectivoEntregado, setEfectivoEntregado] = useState(pagoEfectivoInicial);
   const [pagoTransferencia, setPagoTransferencia] = useState(pagoTransferenciaInicial);
   const [devuelta, setDevuelta] = useState(0);
-  const [valorFormateadoEfectivo, setValorFormateadoEfectivo] = useState('');
-  const [valorFormateadoTransferencia, setValorFormateadoTransferencia] = useState('');
+  const [valorFormateadoEfectivo, setValorFormateadoEfectivo] = useState(efectivoFormateadoInicial);
+  const [valorFormateadoTransferencia, setValorFormateadoTransferencia] = useState(transferenciaFormateadoInicial);
   const [erroresPago, setErroresPago] = useState({});
 
   const handleMetodoPagoChange = (event) => {
@@ -91,8 +100,6 @@ const PaymentDialogEdit = ({ open, onClose, totalFactura, editarFactura, ventaRe
   };
 
   const handlePago = () => {
-    const fechaVenta = new Date();
-
     const nuevosErrores = {};
   
     if (metodoPago === 'efectivo') {
@@ -132,7 +139,7 @@ const PaymentDialogEdit = ({ open, onClose, totalFactura, editarFactura, ventaRe
         ...ventaResumen,
         metodoPago,
         totalFactura,
-        fechaVenta: fechaVenta.toISOString(),
+        fechaVenta: infoFacturaOrig.fechaVenta,
         vendedor: userName,
         _id: infoFacturaOrig._id
       }

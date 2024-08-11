@@ -1,9 +1,9 @@
 import React from 'react';
 import CodigoBarras from './CodigoBarras';
 
-const FacturaImpresion = ({ datosFactura }) => {
+const FacturaImpresion = ({ datosFactura, msgGarantia }) => {
 
-  const fechaVenta = new Date(datosFactura.fechaVenta);
+  const fechaVenta = new Date(datosFactura.fechaVenta); 
 
   // Formatear la fecha en un formato más legible
   const fechaFormateada = fechaVenta.toLocaleString('es-CO', {
@@ -180,7 +180,7 @@ const FacturaImpresion = ({ datosFactura }) => {
 
       <div style={{ borderTop: '1px dotted #000', margin: '5px 0' }}></div>
       <div style={{ ...estilosTexto, textAlign: 'left' }}>
-        <p style={estilosTextoGarantia}><span style={tituloTexto}>Garantía:</span> _________________________________________</p>
+        <p style={estilosTextoGarantia}><span style={tituloTexto}>Garantía:</span> {msgGarantia}</p>
         <p style={estilosTextoGarantia}> _________________________________________</p>
       </div>
       <p style={{fontSize: "11px", margin: '5px', padding: '0', lineHeight: '1.2'}}>✱ Nuestras garantías no cubren: Humedad, Golpes, Rayones, Equipos apagados, Reporte por no registro ✱</p>

@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
-
 import { Box, useTheme, IconButton, Button, Typography, Stack, TextField, Autocomplete, ToggleButton, ToggleButtonGroup, Snackbar, Alert } from "@mui/material";
 import { DataGrid } from "@mui/x-data-grid";
+import debounce from 'lodash/debounce';
 import { tokens } from "../../theme";
 import Header from "../../components/Header";
 import PaymentDialogContado from '../../components/PaymentDialogContado';
 import PaymentDialogApartado from '../../components/PaymentDialogApartado';
 import PrintFactura from '../../components/printFactura';
 import PrintComprobante from '../../components/printComprobanteApartado';
+import MensajeGarantia from '../../components/MsgGarantia';
 
 import CachedIcon from '@mui/icons-material/Cached';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -31,7 +32,7 @@ const PuntoVenta = () => {
   const [opciones, setOpciones] = useState([]);
   const [inputValue, setInputValue] = useState('');
   const [selectedValue, setSelectedValue] = useState(null);
-  const [busquedaTipo, setBusquedaTipo] = useState('nombre')
+  const [busquedaTipo, setBusquedaTipo] = useState('codigo')
   const [productosVendidos, setProductosVendidos] = useState([]);
   const [totalFactura, setTotalFactura] = useState(0);
   const [openDialogPago, setOpenDialogPago] = useState(false);
@@ -39,6 +40,8 @@ const PuntoVenta = () => {
   const [ventaResumen, setVentaResumen] = useState(null);
   const [facturaParaImprimir, setFacturaParaImprimir] = useState(null);
   const [comprobanteParaImprimir, setComprobanteParaImprimir] = useState(null);
+  const [mensajeGarantia, setMensajeGarantia] = useState('_______________________________');
+  const [dialogOpenGarantia, setDialogOpenGarantia] = useState(false);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState("");
   const [snackbarSeverity, setSnackbarSeverity] = useState("error");
@@ -69,23 +72,18 @@ const PuntoVenta = () => {
     return esValido;
   };
 
-
   const handleSelectProducto = (event, newValue) => {
-    // Comprobar si newValue es uno de las opciones disponibles
     const opcionSeleccionada = opciones.find(opcion => opcion.nombre === newValue || opcion === newValue);
-  
+
     if (opcionSeleccionada) {
-      // Continuar con la lógica de selección si es una opción válida
       const productoExistenteIndex = productosVendidos.findIndex(p => p._id === opcionSeleccionada._id);
-  
+
       if (productoExistenteIndex !== -1) {
-        // El producto ya existe, aumentar solo la cantidad
         const nuevosProductos = [...productosVendidos];
         nuevosProductos[productoExistenteIndex].cantidad += 1;
         nuevosProductos[productoExistenteIndex].precio_total = nuevosProductos[productoExistenteIndex].precio_unitario_venta * nuevosProductos[productoExistenteIndex].cantidad;
         setProductosVendidos(nuevosProductos);
       } else {
-        // El producto es nuevo, añadir al array con los valores iniciales
         setProductosVendidos([...productosVendidos, {
           ...opcionSeleccionada,
           cantidad: 1,
@@ -93,39 +91,51 @@ const PuntoVenta = () => {
           precio_unitario_venta: opcionSeleccionada.precio_sugerido
         }]);
       }
+      setInputValue('');
+      setSelectedValue(null);
     } else {
-      // Si no es una opción válida, podría optar por no hacer nada o manejar el caso de alguna otra manera
-      console.log("Selección no válida, ignora el evento Enter");
+      console.log("Selección no válida o valor indefinido");
     }
-    setInputValue(''); // Limpiar el input después de seleccionar o intentar seleccionar
-    setSelectedValue(null); // Resetear el valor seleccionado
   };
-  
 
-  const buscarProductos = async (busqueda) => {
+  const buscarProductos = debounce(async (busqueda) => {
     if (busqueda.length < 3) {
       setOpciones([]);
       return;
     }
-
+  
     let url = `${API_URL}/productos/buscar?`;
     if (busquedaTipo === 'nombre') {
       url += `nombre=${encodeURIComponent(busqueda)}`;
     } else if (busquedaTipo === 'codigo') {
       url += `codigo=${encodeURIComponent(busqueda)}`;
     }
-
+  
     try {
       const response = await fetch(url);
-      console.log(response)
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       const productos = await response.json();
-      console.log(productos)
       setOpciones(productos);
     } catch (error) {
       console.error("No se pudo obtener los productos", error);
+    }
+  }, 300);
+
+  const handleInputChange = (_, newInputValue) => {
+    let cleanedInputValue = newInputValue ? newInputValue.replace(/[\n\r]+/g, '') : '';
+    setInputValue(cleanedInputValue);
+    if (cleanedInputValue) {
+      buscarProductos(cleanedInputValue);
+    }
+  };
+
+  const handleKeyDown = (event) => {
+    if (event.key === 'Enter') {
+      event.preventDefault(); // Evita cualquier acción predeterminada de Enter
+      // Detenemos la propagación del evento para asegurarnos de que no se maneje en ningún otro lugar
+      event.stopPropagation();
     }
   };
 
@@ -288,7 +298,7 @@ const PuntoVenta = () => {
 
       const facturaGuardada = await response.json();
       setFacturaParaImprimir(facturaGuardada);
-      imprimirFactura(facturaGuardada);
+      handleOpenDialogGarantia();
 
       console.log(facturaGuardada);
 
@@ -331,8 +341,10 @@ const PuntoVenta = () => {
     }
   };
 
-  const imprimirFactura = (datosFactura) => {
-    setTimeout(() => {
+const imprimirFactura = () => {
+  setTimeout(() => {
+    const facturaElement = document.getElementById('facturaParaImprimir');
+    if (facturaElement) {
       const ventanaImpresion = window.open('', '_blank', 'width=50mm');
       ventanaImpresion.document.write(`
         <html>
@@ -341,7 +353,7 @@ const PuntoVenta = () => {
           <style>
             body, html {
               width: 58mm;
-              font-family: 'Arial', sans-serif;
+              font-family: 'Arial', sans-serif';
             }
             img {
               max-width: 30mm;
@@ -349,22 +361,25 @@ const PuntoVenta = () => {
               margin-top: 5px;
               margin-bottom: 5px;
             }
-            /* Añade aquí más estilos según sea necesario */
           </style>
         </head>
         <body>
-          ${document.getElementById('facturaParaImprimir').innerHTML}
+          ${facturaElement.innerHTML}
         </body>
         </html>
       `);
       ventanaImpresion.document.close();
       ventanaImpresion.focus();
       // ventanaImpresion.print();
-      // ventanaImpresion.close(); // Descomenta si deseas que la ventana se cierre automáticamente después de imprimir
-    }, 500);
-  };
+      // ventanaImpresion.close(); 
+    } else {
+      console.error('No se encontró el elemento de la factura para imprimir.');
+    }
+  }, 500);
+};
   
-  const imprimirComprobante = (datosApartado) => {
+  const imprimirComprobante = () => {
+    const comprobanteElement = document.getElementById('comprobanteParaImprimir');
     setTimeout(() => {
       const ventanaImpresion = window.open('', '_blank', 'width=50mm');
       ventanaImpresion.document.write(`
@@ -386,7 +401,7 @@ const PuntoVenta = () => {
           </style>
         </head>
         <body>
-          ${document.getElementById('comprobanteParaImprimir').innerHTML}
+          ${comprobanteElement.innerHTML}
         </body>
         </html>
       `);
@@ -395,7 +410,7 @@ const PuntoVenta = () => {
       // ventanaImpresion.print();
       // ventanaImpresion.close(); // Descomenta si deseas que la ventana se cierre automáticamente después de imprimir
     }, 500);
-  }; 
+  };
 
   const columns = [
     { field: "codigo", headerName: "Código" },
@@ -452,6 +467,23 @@ const PuntoVenta = () => {
     setSnackbarMessage(message);
     setSnackbarSeverity(severity);
     setSnackbarOpen(true);
+  };
+
+  const handleOpenDialogGarantia = () => {
+    setDialogOpenGarantia(true);
+  };
+
+  const handleCloseDialogGarantia = () => {
+    setDialogOpenGarantia(false);
+    imprimirFactura(facturaParaImprimir);
+  };
+
+  const handleSaveMensaje = (mensaje) => {
+    setMensajeGarantia(mensaje);
+  };
+
+  const handleSkipMensaje = () => {
+    setMensajeGarantia("_______________________________");
   };
   
   useEffect(() => {
@@ -556,17 +588,18 @@ const PuntoVenta = () => {
           getOptionLabel={(option) => 
             `${option.nombre} - Código: ${option.codigo} - Cantidad: ${option.cantidad}`
           }
-          onInputChange={(_, newInputValue) => {
-            if (newInputValue !== inputValue) {
-              setInputValue(newInputValue);
-              buscarProductos(newInputValue);
-            }
-          }}
+          onInputChange={handleInputChange}
           inputValue={inputValue}
           onChange={handleSelectProducto}
           value={selectedValue}
           renderInput={(params) => (
-            <TextField {...params} label={`Buscar por ${busquedaTipo}`} variant="outlined" fullWidth />
+            <TextField 
+              {...params} 
+              label={`Buscar por ${busquedaTipo}`} 
+              variant="outlined" 
+              fullWidth
+              onKeyDown={handleKeyDown} 
+            />
           )}
           renderOption={(props, option) => (
             <Box component="li" {...props} sx={{ display: 'flex', flexDirection: 'column', alignItems: 'start' }}>
@@ -684,8 +717,14 @@ const PuntoVenta = () => {
             </Alert>
           </Snackbar>
         </Stack>
+        <MensajeGarantia
+          open={dialogOpenGarantia}
+          onClose={handleCloseDialogGarantia}
+          onSave={handleSaveMensaje}
+          onSkip={handleSkipMensaje}
+        />
         <div id="facturaParaImprimir" style={{ display: "none" }}>
-          {facturaParaImprimir && <PrintFactura datosFactura={facturaParaImprimir} />}
+          {facturaParaImprimir && mensajeGarantia && <PrintFactura datosFactura={facturaParaImprimir} msgGarantia={mensajeGarantia} />}
         </div>
         <div id="comprobanteParaImprimir" style={{ display: "none" }}>
           {comprobanteParaImprimir && <PrintComprobante datosApartado={comprobanteParaImprimir} />}

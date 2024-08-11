@@ -93,6 +93,21 @@ const ApartadoDialog = ({ apartadoInfo, open, onSave, onClose }) => {
   };
 
   const procesarPago = async (datosPago) => {
+
+    const responseUpdate = await fetch(`${API_URL}/productos/procesarVenta`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(datosPago.productosVendidos)
+    });
+
+    const updateMsg = await responseUpdate.json();
+
+    if (!responseUpdate.ok) {
+      throw new Error(`Unidades insuficientes en inventario | ${updateMsg.mensaje}`);
+    }
+
     console.log("Datos de Pago:", datosPago);
     try {
       const response = await fetch(`${API_URL}/facturas`, {

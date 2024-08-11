@@ -8,6 +8,7 @@ import AddProductDialog from "../../components/AddProductDialog";
 import EditProductDialog from "../../components/EditProductDialog";
 import HandlerTipos from "../../components/HandlerTipos";
 import InfoInventario from "../../components/infoInventario";
+import AddOrderDialog from "../../components/AddOrderDialog";
 
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -30,6 +31,7 @@ const Inventario = () => {
   const [productoAEliminar, setProductoAEliminar] = useState(null);
   const [dialogOpenInfoInventario, setDialogOpenInfoInventario] = useState(false);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
+  const [orderDialogOpen, setOrderDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [productToEdit, setProductToEdit] = useState(null);
   const [busquedaTipo, setBusquedaTipo] = useState('nombre');
@@ -44,7 +46,7 @@ const Inventario = () => {
     setSnackbarSeverity(severity);
     setSnackbarOpen(true);
   };
-   
+
   const closeSnackbar = (event, reason) => {
     if (reason === 'clickaway') {
       return;
@@ -71,8 +73,16 @@ const Inventario = () => {
     setAddDialogOpen(true);
   };
 
+  const handleOpenAddPedidoDialog = () => {
+    setOrderDialogOpen(true);
+  };
+
   const handleCloseAddDialog = () => {
     setAddDialogOpen(false);
+  };
+
+  const handleCloseAddPedidoDialog = () => {
+    setOrderDialogOpen(false);
   };
 
   const handleCloseDialog = () => {
@@ -414,6 +424,19 @@ const Inventario = () => {
               >
                 Agregar Producto
               </Button>
+
+              <Button
+                sx={{
+                  backgroundColor: colors.blueAccent[700],
+                  color: colors.grey[100],
+                  fontWeight: "bold",
+                  padding: "10px 20px",
+                }} 
+                onClick={handleOpenAddPedidoDialog}
+              >
+                Ingresar pedido
+              </Button>
+
               <Button
                 sx={{
                   backgroundColor: colors.blueAccent[700],
@@ -440,6 +463,12 @@ const Inventario = () => {
           <AddProductDialog
             open={addDialogOpen}
             onClose={handleCloseAddDialog}
+            onSave={handleSaveProduct}
+          />
+
+          <AddOrderDialog
+            open={orderDialogOpen}
+            onClose={handleCloseAddPedidoDialog}
             onSave={handleSaveProduct}
           />
 
