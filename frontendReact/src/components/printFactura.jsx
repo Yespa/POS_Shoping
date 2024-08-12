@@ -50,7 +50,7 @@ const FacturaImpresion = ({ datosFactura, msgGarantia }) => {
   const tablaEstilos = {
     width: '100%',
     borderCollapse: 'collapse',
-    fontSize: '13px' // Asegurándose de que la tabla también use el mismo tamaño de fuente
+    fontSize: '13px'
   };
 
   // Estilos en línea para celdas de la tabla
@@ -62,26 +62,26 @@ const FacturaImpresion = ({ datosFactura, msgGarantia }) => {
   // Estilos en línea para uniformar el tamaño de la letra
   const estilosTextoBloque1 = {
     fontSize: '13px',
-    margin: '0',  // Eliminar el margen
-    padding: '0', // Eliminar el padding
-    lineHeight: '1.4', // Altura de línea compacta
-    textAlign: 'center' // Alineación centrada
+    margin: '0',
+    padding: '0',
+    lineHeight: '1.4',
+    textAlign: 'center'
   };
 
   const estilosTexto = {
     fontSize: '13px',
-    margin: '0',  // Eliminar el margen
-    padding: '0', // Eliminar el padding
-    lineHeight: '1.3', // Altura de línea compacta
-    textAlign: 'left' // Alineación centrada
+    margin: '0',
+    padding: '0',
+    lineHeight: '1.3',
+    textAlign: 'left'
   };
 
   const estilosTextoGarantia = {
     fontSize: '13px',
-    margin: '0',  // Eliminar el margen
-    padding: '0', // Eliminar el padding
-    lineHeight: '1.6', // Altura de línea compacta
-    textAlign: 'left' // Alineación centrada
+    margin: '0',
+    padding: '0',
+    lineHeight: '1.6',
+    textAlign: 'left'
   };
 
   // Estilos para la sección de detalles de pago

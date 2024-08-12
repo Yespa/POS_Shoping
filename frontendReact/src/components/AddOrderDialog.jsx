@@ -19,8 +19,8 @@ const AddOrderDialog = ({ open, onClose, onSave }) => {
     precio_inventario: 0,
     precio_sugerido: 0
   }]);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [busquedaTipo, setBusquedaTipo] = useState('nombre');
+  const [searchTerms, setSearchTerms] = useState(['']);
+  const [busquedaTipo, setBusquedaTipo] = useState('codigo');
   const [productos, setProductos] = useState([]);
   const [tiposProducto, setTiposProducto] = useState([]);
   const [errors, setErrors] = useState({});
@@ -58,6 +58,10 @@ const AddOrderDialog = ({ open, onClose, onSave }) => {
     const updatedProducts = [...newProducts];
     updatedProducts[index] = { ...product, cantidad: 0, precio_inventario: 0, precio_sugerido: 0 };
     setNewProducts(updatedProducts);
+    // Limpiar el campo de búsqueda después de seleccionar un producto
+    const updatedSearchTerms = [...searchTerms];
+    updatedSearchTerms[index] = '';  // Esto restablece el campo de búsqueda solo para la fila correspondiente
+    setSearchTerms(updatedSearchTerms);
   };
 
   const handleAddProduct = () => {
@@ -70,12 +74,29 @@ const AddOrderDialog = ({ open, onClose, onSave }) => {
       precio_inventario: 0,
       precio_sugerido: 0
     }]);
+    setSearchTerms([...searchTerms, '']);  // Añade un nuevo estado de búsqueda para la nueva fila
   };
 
   const handleRemoveProduct = (index) => {
     const updatedProducts = [...newProducts];
     updatedProducts.splice(index, 1);
     setNewProducts(updatedProducts);
+  
+    const updatedSearchTerms = [...searchTerms];
+    updatedSearchTerms.splice(index, 1);
+    setSearchTerms(updatedSearchTerms);
+  
+    // Reindexar errores
+    const updatedErrors = {};
+    updatedProducts.forEach((_, i) => {
+      updatedErrors[`codigo${i}`] = errors[`codigo${i >= index ? i + 1 : i}`] || '';
+      updatedErrors[`nombre${i}`] = errors[`nombre${i >= index ? i + 1 : i}`] || '';
+      updatedErrors[`tipo_producto${i}`] = errors[`tipo_producto${i >= index ? i + 1 : i}`] || '';
+      updatedErrors[`cantidad${i}`] = errors[`cantidad${i >= index ? i + 1 : i}`] || '';
+      updatedErrors[`precio_inventario${i}`] = errors[`precio_inventario${i >= index ? i + 1 : i}`] || '';
+      updatedErrors[`precio_sugerido${i}`] = errors[`precio_sugerido${i >= index ? i + 1 : i}`] || '';
+    });
+    setErrors(updatedErrors);
   };
 
   const validate = async () => {
@@ -125,18 +146,9 @@ const AddOrderDialog = ({ open, onClose, onSave }) => {
       for (let producto of productosExistentes) {
         const productoExistente = productos.find(p => p.codigo === producto.codigo);
 
-        console.log("CANTIDAD ACTUAL")
-        console.log(productoExistente.cantidad)
-        console.log("CANTIDAD DIGITADA")
-        console.log(producto.cantidad)
-
         productoExistente.cantidad = validateAndConvertToInt(productoExistente.cantidad) + validateAndConvertToInt(producto.cantidad);
         productoExistente.precio_inventario = producto.precio_inventario;
         productoExistente.precio_sugerido = producto.precio_sugerido;
-
-        console.log("Valor existente")
-        console.log(productoExistente)
-
 
         await fetch(`${API_URL}/productos/${productoExistente._id}`, {
           method: 'PUT',
@@ -152,9 +164,6 @@ const AddOrderDialog = ({ open, onClose, onSave }) => {
       for (let producto of productosNuevos) {
 
         producto.cantidad = validateAndConvertToInt(producto.cantidad)
-
-        console.log("Valor nuevo")
-        console.log(producto)
         await fetch(`${API_URL}/productos`, {
           method: 'POST',
           headers: {
@@ -163,7 +172,6 @@ const AddOrderDialog = ({ open, onClose, onSave }) => {
           body: JSON.stringify(producto),
         });
       }
-
       resetForm();
       onClose();
     }
@@ -184,6 +192,7 @@ const AddOrderDialog = ({ open, onClose, onSave }) => {
       precio_inventario: 0,
       precio_sugerido: 0
     }]);
+    setSearchTerms(['']);
     setErrors({});
   };
 
@@ -201,12 +210,12 @@ const AddOrderDialog = ({ open, onClose, onSave }) => {
     }
   };
 
-  const realizarBusqueda = async () => {
+  const realizarBusqueda = async (index) => {
     let url = `${API_URL}/productos/buscar?`;
     if (busquedaTipo === 'nombre') {
-      url += `nombre=${encodeURIComponent(searchTerm)}`;
+      url += `nombre=${encodeURIComponent(searchTerms[index])}`;
     } else if (busquedaTipo === 'codigo') {
-      url += `codigo=${encodeURIComponent(searchTerm)}`;
+      url += `codigo=${encodeURIComponent(searchTerms[index])}`;
     }
 
     try {
@@ -237,59 +246,59 @@ const AddOrderDialog = ({ open, onClose, onSave }) => {
       <DialogTitle>Agregar Pedido</DialogTitle>
       <DialogContent>
         <Box mb={2}>
-          <ToggleButtonGroup
-            color="primary"
-            value={busquedaTipo}
-            exclusive
-            onChange={(_, newBusquedaTipo) => {
-              if (newBusquedaTipo !== null) {
-                setBusquedaTipo(newBusquedaTipo);
-              }
+        <ToggleButtonGroup
+          color="primary"
+          value={busquedaTipo}
+          exclusive
+          onChange={(_, newBusquedaTipo) => {
+            if (newBusquedaTipo !== null) {
+              setBusquedaTipo(newBusquedaTipo);
+            }
+          }}
+        >
+          <ToggleButton
+            value="nombre"
+            sx={{
+              '&.Mui-selected': {
+                bgcolor: 'primary.main',
+                color: 'white',
+                '&:hover': {
+                  bgcolor: 'primary.dark',
+                },
+              },
+              '&:not(.Mui-selected)': {
+                bgcolor: 'primary.light',
+                color: 'white',
+                '&:hover': {
+                  bgcolor: 'primary.main',
+                },
+              },
             }}
           >
-            <ToggleButton
-              value="nombre"
-              sx={{
-                '&.Mui-selected': {
-                  bgcolor: 'warning.light',
-                  color: 'white',
-                  '&:hover': {
-                    bgcolor: 'warning.main',
-                  },
+            Buscar por Nombre
+          </ToggleButton>
+          <ToggleButton
+            value="codigo"
+            sx={{
+              '&.Mui-selected': {
+                bgcolor: 'primary.main',
+                color: 'white',
+                '&:hover': {
+                  bgcolor: 'primary.dark',
                 },
-                '&:not(.Mui-selected)': {
-                  bgcolor: 'warning.main',
-                  color: 'white',
-                  '&:hover': {
-                    bgcolor: 'warning.dark',
-                  },
+              },
+              '&:not(.Mui-selected)': {
+                bgcolor: 'primary.light',
+                color: 'white',
+                '&:hover': {
+                  bgcolor: 'primary.main',
                 },
-              }}
-            >
-              Buscar por Nombre
-            </ToggleButton>
-            <ToggleButton
-              value="codigo"
-              sx={{
-                '&.Mui-selected': {
-                  bgcolor: 'warning.light',
-                  color: 'white',
-                  '&:hover': {
-                    bgcolor: 'warning.main',
-                  },
-                },
-                '&:not(.Mui-selected)': {
-                  bgcolor: 'warning.main',
-                  color: 'white',
-                  '&:hover': {
-                    bgcolor: 'warning.dark',
-                  },
-                },
-              }}
-            >
-              Buscar por Código
-            </ToggleButton>
-          </ToggleButtonGroup>
+              },
+            }}
+          >
+            Buscar por Código
+          </ToggleButton>
+        </ToggleButtonGroup>
         </Box>
         <TableContainer component={Paper}>
           <Table>
@@ -316,12 +325,16 @@ const AddOrderDialog = ({ open, onClose, onSave }) => {
                     freeSolo
                     options={productos}
                     getOptionLabel={(option) => `${option.nombre} - Código: ${option.codigo}`}
+                    inputValue={searchTerms[index]}  // Asegura que el campo de búsqueda esté controlado para la fila correspondiente
                     onInputChange={(event, newInputValue) => {
-                      setSearchTerm(newInputValue);
-                      realizarBusqueda();
+                      const updatedSearchTerms = [...searchTerms];
+                      updatedSearchTerms[index] = newInputValue;
+                      setSearchTerms(updatedSearchTerms);
+                      realizarBusqueda(index);
                     }}
-                    inputValue={searchTerm}
-                    onChange={(event, newValue) => handleSelectProduct(index, newValue)}
+                    onChange={(event, newValue) => {
+                      handleSelectProduct(index, newValue);
+                    }}
                     renderInput={(params) => (
                       <TextField 
                         {...params} 

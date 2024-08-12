@@ -214,7 +214,7 @@ const PuntoVenta = () => {
     setOpciones([]);
     setInputValue('');
     setSelectedValue(null);
-    setBusquedaTipo('nombre');
+    setBusquedaTipo('codigo');
   };
 
   const handleAbrirDialogPago = () => {

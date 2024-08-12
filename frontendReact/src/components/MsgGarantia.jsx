@@ -8,7 +8,7 @@ const MensajeGarantia = ({ open, onClose, onSave, onSkip }) => {
 
   useEffect(() => {
     if (open) {
-      setMensaje(''); // Restablece el valor del mensaje al abrir el diálogo
+      setMensaje('');
     }
   }, [open]);
 
